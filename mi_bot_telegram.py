@@ -15,7 +15,7 @@ user_states = {}
 
 def get_google_client() :
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name('C:\\Users\\mrcue\\Documents\\Compartir Cuentas\\Bot Telegram\\credentials.json', scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
     return gspread.authorize(creds)
 
 def get_google_sheet_data(sheet_id: int):
