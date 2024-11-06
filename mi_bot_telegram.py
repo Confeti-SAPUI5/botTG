@@ -19,7 +19,12 @@ user_states = {}
 
 def get_google_client() :
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']
-    google_credentials = json.loads(os.getenv('GOOGLE_CREDENTIALS_JSON'))
+    google_credentials_str = os.getenv('GOOGLE_CREDENTIALS_JSON')
+    print(f"GOOGLE_CREDENTIALS_JSON: {google_credentials_str}")  # Agrega esto para verificar
+    if google_credentials_str is None:
+        raise ValueError("La variable de entorno 'GOOGLE_CREDENTIALS_JSON' no está configurada correctamente.")
+    
+    google_credentials = json.loads(google_credentials_str)
     #google_credentials = 'credentials.json'
     creds = ServiceAccountCredentials.from_json_keyfile_name(google_credentials, scope)
     return gspread.authorize(creds)
