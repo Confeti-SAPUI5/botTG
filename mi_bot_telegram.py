@@ -25,8 +25,9 @@ def get_google_client() :
         raise ValueError("La variable de entorno 'GOOGLE_CREDENTIALS_JSON' no está configurada correctamente.")
     
     google_credentials = json.loads(google_credentials_str)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(google_credentials, scope)
     #google_credentials = 'credentials.json'
-    creds = ServiceAccountCredentials.from_json_keyfile_name(google_credentials, scope)
+    #creds = ServiceAccountCredentials.from_json_keyfile_name(google_credentials, scope)
     return gspread.authorize(creds)
 
 def get_google_sheet_data(sheet_id: int):
