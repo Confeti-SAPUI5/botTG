@@ -4,6 +4,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from telegram.ext.filters import BaseFilter
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime, timedelta
+
 import re
 import gspread
 
@@ -13,9 +14,12 @@ admin_chat_id = 7525505749  # Reemplaza con el ID de tu chat
 BD = 'BD BotTelegram'
 user_states = {}
 
+
 def get_google_client() :
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+    google_credentials = json.loads(os.getenv('GOOGLE_CREDENTIALS_JSON'))
+    #google_credentials = 'credentials.json'
+    creds = ServiceAccountCredentials.from_json_keyfile_name(google_credentials, scope)
     return gspread.authorize(creds)
 
 def get_google_sheet_data(sheet_id: int):
