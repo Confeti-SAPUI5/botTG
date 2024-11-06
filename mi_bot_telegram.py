@@ -98,24 +98,8 @@ async def handle_email_message(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     if bValidUser and bValidEmail:
-        await update.message.reply_text(f'Usuario autorizado')
-
-        await update.message.reply_text(f'Generando reemplazo...')
-        if not await send_Netflix_replacement(update, iRow):
-            return
-       
-        await update.message.reply_text(f'Eliminando reporte mas antiguo...')
-        await verifyUserMaxReports(update, True)
-
-        await update.message.reply_text(f'Añadiendo registro del reporte...')
-        aReportes = get_google_sheet_data(2)
-        await update_google_sheet(BD, 2, len(aReportes) + 2, 1, user_id)
-        fecha_hoy = datetime.now()
-        fecha_formateada = fecha_hoy.strftime("%d/%m/%Y %H:%M:%S")
-        await update_google_sheet(BD, 2, len(aReportes) + 2, 2, fecha_formateada)
-        await update_google_sheet(BD, 2, len(aReportes) + 2, 3, user_message)
-
-        return
+        #await update.message.reply_text(f'Generando reemplazo...')
+        await send_Netflix_replacement(update, iRow)
 
     if not bValidEmail:
         await update.message.reply_text(f"El correo '{user_message}' no se encuetra en la base de datos")
@@ -221,6 +205,19 @@ async def send_Netflix_replacement(update, iRow) -> bool:
         #Rellenamos las columnas estado y ultimo usuario de la cuenta reportada
         await update_google_sheet(BD, 1, iRow, 4, 'Error')
         await update_google_sheet(BD, 1, iRow, 5, user_id)
+        
+        #await update.message.reply_text(f'Eliminando reporte mas antiguo...')
+        await verifyUserMaxReports(update, True)
+
+        #await update.message.reply_text(f'Añadiendo registro del reporte...')
+        aReportes = get_google_sheet_data(2)
+        await update_google_sheet(BD, 2, len(aReportes) + 2, 1, user_id)
+        fecha_hoy = datetime.now()
+        fecha_formateada = fecha_hoy.strftime("%d/%m/%Y %H:%M:%S")
+        await update_google_sheet(BD, 2, len(aReportes) + 2, 2, fecha_formateada)
+        user_message = update.message.text.strip()
+        await update_google_sheet(BD, 2, len(aReportes) + 2, 3, user_message)
+        await update_google_sheet(BD, 2, len(aReportes) + 2, 4, resultado['Correo'])
         return True
     else:
         await update.message.reply_text("No hay reemplazos disponibles, prueba mas tarde.")
@@ -246,7 +243,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
 
     if query.data == "solicitar_correo":
-        await update.effective_message.reply_text("Por favor, introduce tu dirección de correo electrónico:")
+        await update.effective_message.reply_text("Introduce la dirección de correo electrónico que da error:")
         user_states[query.from_user.id] = 'waiting_for_email'
 
     if query.data == "ver_precios":
