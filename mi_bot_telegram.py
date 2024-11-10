@@ -254,7 +254,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.effective_message.reply_text(f'Para contratar contactar con @confeti')
 
 async def add_log(update: Update, sResult, sReplacement, sError) -> None:
-    fecha_actual = datetime.now()
+    fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     user_id = update.message.from_user.id
     user_message = update.message.text.strip()
     aLogs = await get_google_sheet_data(3)
