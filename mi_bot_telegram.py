@@ -30,7 +30,7 @@ def get_google_client() :
     #creds = ServiceAccountCredentials.from_json_keyfile_name(google_credentials, scope)
     return gspread.authorize(creds)
 
-def get_google_sheet_data(sheet_id: int):
+async def get_google_sheet_data(sheet_id: int):
     googleClient = get_google_client()
 
     spreadsheet = googleClient.open('BD BotTelegram')
@@ -74,7 +74,7 @@ async def handle_email_message(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("Por favor, introduce una dirección de correo válida.")
         return
 
-    aData = get_google_sheet_data(1)
+    aData = await get_google_sheet_data(1)
     # Verifica si el correo está en la lista y pertenece al usuario que lo ha reportado de autorizados
     bValidUser = False
     bValidEmail = False
@@ -113,7 +113,7 @@ async def handle_email_message(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def checkUser(update: Update) -> bool:
     user_id = update.message.from_user.id
-    aData = get_google_sheet_data(0)
+    aData = await get_google_sheet_data(0)
     bFound = False
     for oData in aData:
         if oData['ID'] == user_id:
@@ -123,14 +123,14 @@ async def checkUser(update: Update) -> bool:
 
 async def verifyUserMaxReports(update: Update, bDelete) -> bool:
     user_id = update.message.from_user.id
-    aUsers = get_google_sheet_data(0)
+    aUsers = await get_google_sheet_data(0)
     iMaxReports = 0
     for oUser in aUsers:
         if oUser['ID'] == user_id:
             iMaxReports = oUser['maxReports']
             break
     
-    aReports = get_google_sheet_data(2)
+    aReports = await get_google_sheet_data(2)
     resultados_filtrados = [reporte for reporte in aReports if reporte['ID Usuario'] == user_id]
     if len(resultados_filtrados) >= iMaxReports:
         #Verificar si han pasado mas de 24h desde el último reporte, si es así borrarlo. Si no es asi dar aviso al usuario
@@ -190,7 +190,7 @@ async def borrar_reporte_mas_antiguo(aReports, user_id, registros_usuario):
         print("No se encontró el registro más antiguo para eliminar.")
 
 async def send_Netflix_replacement(update, iRow) -> bool:
-    aCuentas = get_google_sheet_data(1)
+    aCuentas = await get_google_sheet_data(1)
     resultado, fila = next(
         ((obj, idx + 2) for idx, obj in enumerate(aCuentas) if obj['Usuario'] == '' and obj['Estado'] != 'Error'),
         (None, None)
@@ -210,7 +210,7 @@ async def send_Netflix_replacement(update, iRow) -> bool:
         await verifyUserMaxReports(update, True)
 
         #await update.message.reply_text(f'Añadiendo registro del reporte...')
-        aReportes = get_google_sheet_data(2)
+        aReportes = await get_google_sheet_data(2)
         await update_google_sheet(BD, 2, len(aReportes) + 2, 1, user_id)
         fecha_hoy = datetime.now()
         fecha_formateada = fecha_hoy.strftime("%d/%m/%Y %H:%M:%S")
