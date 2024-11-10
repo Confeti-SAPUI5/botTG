@@ -226,6 +226,7 @@ async def send_Netflix_replacement(update, iRow) -> bool:
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await checkUser(update):
         await update.message.reply_text('No tienes permisos para usar este bot')
+        await add_log(update, 'KO', 'N/A', 'Usuario no autorizado intentado usar  el bot')
         return
     keyboard = [
         [
@@ -252,6 +253,19 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if query.data == "ver_contacto":
         await update.effective_message.reply_text(f'Para contratar contactar con @confeti')
 
+async def add_log(update: Update, sResult, sReplacement, sError) -> None:
+    fecha_actual = datetime.now()
+    user_id = update.message.from_user.id
+    user_message = update.message.text.strip()
+    aLogs = await get_google_sheet_data(3)
+    iLastRow = len(aLogs) + 2
+
+    await update_google_sheet(BD, 3, iLastRow, 1, fecha_actual)
+    await update_google_sheet(BD, 3, iLastRow, 2, user_id)
+    await update_google_sheet(BD, 3, iLastRow, 3, user_message)
+    await update_google_sheet(BD, 3, iLastRow, 4, sResult)
+    await update_google_sheet(BD, 3, iLastRow, 5, sReplacement)
+    await update_google_sheet(BD, 3, iLastRow, 5, sError)
 
     
 app = ApplicationBuilder().token(TOKEN).build()
