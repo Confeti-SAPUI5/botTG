@@ -248,9 +248,6 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.effective_message.reply_text("Introduce la dirección de correo electrónico que da error:")
         user_states[query.from_user.id] = 'waiting_for_email'
 
-    #if query.data == "ver_precios":
-    #    await update.effective_message.reply_text(f'Perfiles Extra de Netflix - 2€ al mes')
-
     if query.data == "ver_contacto":
         await update.effective_message.reply_text(f'Para contratar contactar con @confeti')
 
