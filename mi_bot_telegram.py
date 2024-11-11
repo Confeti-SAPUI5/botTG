@@ -16,37 +16,33 @@ admin_chat_id = 7525505749  # Reemplaza con el ID de tu chat
 BD = 'BD BotTelegram'
 user_states = {}
 
-
+#Para identificase en Google Sheets
 def get_google_client() :
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']
     google_credentials_str = os.getenv('GOOGLE_CREDENTIALS_JSON')
-    print(f"GOOGLE_CREDENTIALS_JSON: {google_credentials_str}")  # Agrega esto para verificar
     if google_credentials_str is None:
         raise ValueError("La variable de entorno 'GOOGLE_CREDENTIALS_JSON' no está configurada correctamente.")
     
     google_credentials = json.loads(google_credentials_str)
     creds = ServiceAccountCredentials.from_json_keyfile_dict(google_credentials, scope)
+    #Para probar en local:
     #google_credentials = 'credentials.json'
     #creds = ServiceAccountCredentials.from_json_keyfile_name(google_credentials, scope)
     return gspread.authorize(creds)
 
+#Para recoger todos los registros de una hoja
 async def get_google_sheet_data(sheet_id: int):
     googleClient = get_google_client()
-
-    spreadsheet = googleClient.open('BD BotTelegram')
+    spreadsheet = googleClient.open(BD)
     sheet = spreadsheet.get_worksheet(sheet_id) 
-    print(sheet)
-
-    # Obtén todos los registros de la hoja
     aData = sheet.get_all_records()
-    
     return aData
 
-async def update_google_sheet(spreadsheet_name, worksheet_index, row, column, value):
+#Para actualizar un registro en una hoja
+async def update_google_sheet(worksheet_index, row, column, value):
     googleClient = get_google_client()
     sheet = googleClient.open(BD).get_worksheet(worksheet_index)
     sheet.update_cell(row, column, value)
-
 
 #Funcion para validar si el usuario a mandado un correo
 def is_valid_email(email):
@@ -183,8 +179,8 @@ async def borrar_reporte_mas_antiguo(aReports, user_id, registros_usuario):
 
     # Borrar el contenido de las celdas correspondientes al registro más antiguo
     if row_to_delete:
-        await update_google_sheet(BD, 2, row_to_delete, 1, "")  # Borrar ID Usuario
-        await update_google_sheet(BD, 2, row_to_delete, 2, "")  # Borrar Fecha reporte
+        await update_google_sheet(2, row_to_delete, 1, "")  # Borrar ID Usuario
+        await update_google_sheet(2, row_to_delete, 2, "")  # Borrar Fecha reporte
         print(f"Registro más antiguo del usuario {user_id} eliminado en la fila {row_to_delete}.")
     else:
         print("No se encontró el registro más antiguo para eliminar.")
@@ -198,26 +194,28 @@ async def send_Netflix_replacement(update, iRow) -> bool:
 
     if resultado:
         await update.message.reply_text(f"Reemplazo generado: \nCorreo: {resultado['Correo']}\nContraseña: {resultado['Contraseña']}")
+        await add_log(update, 'OK', resultado['Correo'], 'Reemplazo entregado con éxito')
+
         user_id = update.message.from_user.id
         #Rellenammos columna usuario de la cuenta que le hemos dado
-        await update_google_sheet(BD, 1, fila, 3, user_id)
+        await update_google_sheet(1, fila, 3, user_id)
 
         #Rellenamos las columnas estado y ultimo usuario de la cuenta reportada
-        await update_google_sheet(BD, 1, iRow, 4, 'Error')
-        await update_google_sheet(BD, 1, iRow, 5, user_id)
+        await update_google_sheet(1, iRow, 4, 'Error')
+        await update_google_sheet(1, iRow, 5, user_id)
         
         #await update.message.reply_text(f'Eliminando reporte mas antiguo...')
         await verifyUserMaxReports(update, True)
 
         #await update.message.reply_text(f'Añadiendo registro del reporte...')
         aReportes = await get_google_sheet_data(2)
-        await update_google_sheet(BD, 2, len(aReportes) + 2, 1, user_id)
+        await update_google_sheet(2, len(aReportes) + 2, 1, user_id)
         fecha_hoy = datetime.now()
         fecha_formateada = fecha_hoy.strftime("%d/%m/%Y %H:%M:%S")
-        await update_google_sheet(BD, 2, len(aReportes) + 2, 2, fecha_formateada)
+        await update_google_sheet(2, len(aReportes) + 2, 2, fecha_formateada)
         user_message = update.message.text.strip()
-        await update_google_sheet(BD, 2, len(aReportes) + 2, 3, user_message)
-        await update_google_sheet(BD, 2, len(aReportes) + 2, 4, resultado['Correo'])
+        await update_google_sheet(2, len(aReportes) + 2, 3, user_message)
+        await update_google_sheet(2, len(aReportes) + 2, 4, resultado['Correo'])
         return True
     else:
         await update.message.reply_text("No hay reemplazos disponibles, prueba mas tarde.")
@@ -231,6 +229,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [
             InlineKeyboardButton("🔴 Reemplazo Netflix 🔴", callback_data="solicitar_correo"),
+        ],
+        [
+            InlineKeyboardButton("📥 Revisar saldo 📥", callback_data="ver_saldo")
         ],
         [
             #InlineKeyboardButton("💰 Precios 💰", callback_data="ver_precios"),
@@ -260,13 +261,24 @@ async def add_log(update: Update, sResult, sReplacement, sError) -> None:
     aLogs = await get_google_sheet_data(3)
     iLastRow = len(aLogs) + 2
 
-    await update_google_sheet(BD, 3, iLastRow, 1, fecha_actual)
-    await update_google_sheet(BD, 3, iLastRow, 2, user_id)
-    await update_google_sheet(BD, 3, iLastRow, 3, user_message)
-    await update_google_sheet(BD, 3, iLastRow, 4, sResult)
-    await update_google_sheet(BD, 3, iLastRow, 5, sReplacement)
-    await update_google_sheet(BD, 3, iLastRow, 5, sError)
+    await update_google_sheet(3, iLastRow, 1, fecha_actual)
+    await update_google_sheet(3, iLastRow, 2, user_id)
+    await update_google_sheet(3, iLastRow, 3, user_message)
+    await update_google_sheet(3, iLastRow, 4, sResult)
+    await update_google_sheet(3, iLastRow, 5, sReplacement)
+    await update_google_sheet(3, iLastRow, 6, sError)
 
+async def ver_saldo(update: Update) -> None:
+    user_id = update.message.from_user.id
+    aUsers = get_google_sheet_data(1)
+    for oUser in aUsers:
+        if oUser['ID'] == user_id:
+            iSaldo = oUser['saldo']
+            if iSaldo is not None:
+                print(f"Tu saldo es de: {iSaldo} cuentas")
+            else:
+                print("Tu saldo es de: 0 cuentas")
+            return
     
 app = ApplicationBuilder().token(TOKEN).build()
 
