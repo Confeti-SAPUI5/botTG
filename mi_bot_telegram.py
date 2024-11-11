@@ -138,7 +138,8 @@ async def verifyUserMaxReports(update: Update, bDelete) -> bool:
         fecha_mas_antigua = min(fechas)
         fecha_actual = datetime.now()
         if fecha_actual - fecha_mas_antigua > timedelta(hours=24):
-            await borrar_reporte_mas_antiguo(aReports, user_id, resultados_filtrados)
+            if bDelete:
+                await borrar_reporte_mas_antiguo(aReports, user_id, resultados_filtrados)
             return True
         else:
             tiempo_24h = fecha_mas_antigua + timedelta(hours=24)
@@ -267,7 +268,7 @@ async def add_log(update: Update, sResult, sReplacement, sError) -> None:
 
 async def ver_saldo(update: Update) -> None:
     user_id = update.message.from_user.id
-    aUsers = get_google_sheet_data(1)
+    aUsers = await get_google_sheet_data(1)
     for oUser in aUsers:
         if oUser['ID'] == user_id:
             iSaldo = oUser['saldo']
