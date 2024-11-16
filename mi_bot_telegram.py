@@ -108,11 +108,11 @@ async def checkAvailableAccounts(update, num_accounts):
 
 async def updateAssignedAccounts(update, num_accounts, extracted_accounts):
     user_id = update.message.from_user.id if update.message else update.callback_query.from_user.id
+    aAccounts = await get_google_sheet_data(1)
     # Actualizar la columna C (Usuario) en la hoja 1 para las cuentas entregadas
     for account in extracted_accounts:
         account_email = account['Correo']
         await add_log(update, 'OK', account_email, 'Cuenta entregada gastando saldo')
-        aAccounts = await get_google_sheet_data(1)
         for i, row in enumerate(aAccounts):
             if row['Correo'] == account_email:
                 await update_google_sheet(1, i + 2, 3, user_id)  # Actualiza la columna C con el user_id
