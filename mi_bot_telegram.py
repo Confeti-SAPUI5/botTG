@@ -112,7 +112,7 @@ async def updateAssignedAccounts(update, num_accounts, extracted_accounts):
     # Actualizar la columna C (Usuario) en la hoja 1 para las cuentas entregadas
     for account in extracted_accounts:
         account_email = account['Correo']
-        await add_log(update, 'OK', account_email, 'Cuenta entregada gastando saldo')
+        await add_log(update, f'Cuenta {account_email} entregada gastando saldo')
         for i, row in enumerate(aAccounts):
             if row['Correo'] == account_email:
                 await update_google_sheet(1, i + 2, 3, user_id)  # Actualiza la columna C con el user_id
@@ -126,11 +126,6 @@ async def updateAssignedAccounts(update, num_accounts, extracted_accounts):
                 new_balance = current_balance - num_accounts
                 await update_google_sheet(0, aUsers.index(user) + 2, 3, new_balance)  # Actualiza la columna C con el nuevo saldo
                 break
-
-    await add_log(update, 'OK', account_email, 'Cuenta entregada gastando saldo')
-
-
-    
     
 async def replaceAccount(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
     user_id = update.message.from_user.id
@@ -266,8 +261,10 @@ async def send_Netflix_replacement(update, iRow) -> bool:
     )
 
     if resultado:
+        user_message = update.message.text.strip()
+
         await update.message.reply_text(f"Reemplazo generado: \nCorreo: {resultado['Correo']}\nContraseña: {resultado['Contraseña']}")
-        await add_log(update, 'OK', resultado['Correo'], 'Reemplazo entregado con éxito')
+        await add_log(update, f'{user_message} reemplazada por \n {resultado['Correo']}')
 
         user_id = update.message.from_user.id
         #Rellenammos columna usuario de la cuenta que le hemos dado
@@ -286,7 +283,6 @@ async def send_Netflix_replacement(update, iRow) -> bool:
         fecha_hoy = datetime.now()
         fecha_formateada = fecha_hoy.strftime("%d/%m/%Y %H:%M:%S")
         await update_google_sheet(2, len(aReportes) + 2, 2, fecha_formateada)
-        user_message = update.message.text.strip()
         await update_google_sheet(2, len(aReportes) + 2, 3, user_message)
         await update_google_sheet(2, len(aReportes) + 2, 4, resultado['Correo'])
         return True
@@ -297,7 +293,7 @@ async def send_Netflix_replacement(update, iRow) -> bool:
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await checkUser(update):
         await update.message.reply_text('No tienes permisos para usar este bot')
-        await add_log(update, 'KO', 'N/A', 'Usuario no autorizado intentado usar  el bot')
+        await add_log(update, 'Usuario no autorizado intentado usar  el bot')
         return
     keyboard = [
         [
@@ -337,25 +333,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await gastar_saldo(update)
 
 
-async def add_log(update: Update, sResult, sReplacement, sDetails) -> None:
+async def add_log(update, sDetails) -> None:
     fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    user_id = update.message.from_user.id
-    user_message = update.message.text.strip()
-    aLogs = await get_google_sheet_data(3)
-    iLastRow = len(aLogs) + 2
 
-    #Fecha del reporte
-    await update_google_sheet(3, iLastRow, 1, fecha_actual)
-    #Usuario que ha realizado la acción
-    await update_google_sheet(3, iLastRow, 2, user_id)
-    #Correo de la cuenta implicada
-    await update_google_sheet(3, iLastRow, 3, user_message)
-    #KO - Error / OK - Todo bien
-    await update_google_sheet(3, iLastRow, 4, sResult)
-    #Correo de reemplazo
-    await update_google_sheet(3, iLastRow, 5, sReplacement)
-    #Detalles
-    await update_google_sheet(3, iLastRow, 6, sDetails)
+    sMessage = f"Fecha: {fecha_actual}\n"
+    sMessage = sMessage + f"Usuario: {update.message.from_user.id}\n"
+    sMessage = sMessage + f"Detalles: {sDetails}"
+
 
 async def ver_saldo(update: Update) -> None:
     user_id = update.callback_query.from_user.id
