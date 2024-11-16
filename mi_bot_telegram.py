@@ -264,7 +264,7 @@ async def send_Netflix_replacement(update, iRow) -> bool:
         user_message = update.message.text.strip()
 
         await update.message.reply_text(f"Reemplazo generado: \nCorreo: {resultado['Correo']}\nContraseña: {resultado['Contraseña']}")
-        await add_log(update, f'{user_message} reemplazada por \n {resultado['Correo']}')
+        await add_log(update, f"{user_message} reemplazada por \n {resultado['Correo']}")
 
         user_id = update.message.from_user.id
         #Rellenammos columna usuario de la cuenta que le hemos dado
