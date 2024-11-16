@@ -70,7 +70,7 @@ async def giveNewAccounts(update: Update, context: ContextTypes.DEFAULT_TYPE, us
         cantidad = int(user_message)
         if cantidad > 0 and cantidad <= iSaldo:
             await update.message.reply_text(f"Has solicitado {cantidad} cuentas. Procesando...")
-            await checkAvailableAccounts(update)
+            await checkAvailableAccounts(update, cantidad)
             # Lógica adicional para otorgar cuentas
         else:
             await update.message.reply_text(f"Por favor, introduce un número positivo menor o igual a tu saldo ({iSaldo}).")
