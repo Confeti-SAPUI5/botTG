@@ -107,7 +107,7 @@ async def checkAvailableAccounts(update, num_accounts):
     await updateAssignedAccounts(update, num_accounts, extracted_accounts)
 
 async def updateAssignedAccounts(update, num_accounts, extracted_accounts):
-    user_id = update.callback_query.from_user.id
+    user_id = update.message.from_user.id if update.message else update.callback_query.from_user.id
     # Actualizar la columna C (Usuario) en la hoja 1 para las cuentas entregadas
     for account in extracted_accounts:
         account_email = account['Correo']
