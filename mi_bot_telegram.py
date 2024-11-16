@@ -310,10 +310,10 @@ async def ver_saldo(update: Update) -> None:
             return
         
 async def get_saldo(update: Update) -> int:
-    oUser = update.callback_query.from_user
-    if not oUser:
-        oUser = update.message.from_user
-    user_id = oUser.id
+    oData = update.callback_query
+    if not oData:
+        oData = update.message
+    user_id = oData.from_user.id
     aUsers = await get_google_sheet_data(0)
     for oUser in aUsers:
         if oUser['ID'] == user_id:
