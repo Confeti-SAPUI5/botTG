@@ -272,19 +272,13 @@ async def add_log(update: Update, sResult, sReplacement, sError) -> None:
 
 async def ver_saldo(update: Update) -> None:
     user_id = update.callback_query.from_user.id
-    print("Ok 1")
-    aUsers = await get_google_sheet_data(1)
-    print("Ok 2")
+    aUsers = await get_google_sheet_data(0)
     for oUser in aUsers:
-        print("Ok 3")
         if oUser['ID'] == user_id:
-            print("Ok 4")
             iSaldo = oUser['saldo']
             if iSaldo is not None:
-                print(f"Tu saldo es de: {iSaldo} cuentas")
                 await update.message.reply_text(f"Tu saldo es de: {iSaldo} cuentas")
             else:
-                print("Tu saldo es de: 0 cuentas")
                 await update.message.reply_text(f"Tu saldo es de: 0 cuentas")
             return
     
