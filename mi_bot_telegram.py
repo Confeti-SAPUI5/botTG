@@ -271,7 +271,7 @@ async def add_log(update: Update, sResult, sReplacement, sError) -> None:
     await update_google_sheet(3, iLastRow, 6, sError)
 
 async def ver_saldo(update: Update) -> None:
-    user_id = update.message.from_user.id
+    user_id = update.callback_query.from_user.id
     print("Ok 1")
     aUsers = await get_google_sheet_data(1)
     print("Ok 2")
