@@ -104,6 +104,28 @@ async def checkAvailableAccounts(update, num_accounts):
 
     await update.message.reply_text(message)
 
+    await updateAssignedAccounts(update, num_accounts, extracted_accounts)
+
+async def updateAssignedAccounts(update, num_accounts, extracted_accounts):
+    user_id = update.callback_query.from_user.id
+    # Actualizar la columna C (Usuario) en la hoja 1 para las cuentas entregadas
+    for account in extracted_accounts:
+        account_email = account['Correo']
+        aAccounts = await get_google_sheet_data(1)
+        for i, row in enumerate(aAccounts):
+            if row['Correo'] == account_email:
+                await update_google_sheet(1, i + 2, 3, user_id)  # Actualiza la columna C con el user_id
+
+    # Actualizar la columna C en la hoja 0 (saldo) restando las cuentas entregadas
+    aUsers = await get_google_sheet_data(0)
+    for user in aUsers:
+        if user['ID'] == user_id:
+            current_balance = user['saldo']
+            if current_balance is not None:
+                new_balance = current_balance - num_accounts
+                await update_google_sheet(0, aUsers.index(user) + 2, 3, new_balance)  # Actualiza la columna C con el nuevo saldo
+                break
+
     
     
 async def replaceAccount(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
