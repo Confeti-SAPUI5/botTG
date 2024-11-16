@@ -50,28 +50,47 @@ def is_valid_email(email):
     return re.match(email_regex, email) is not None
 
 #Verifica que el correo sea válido y esté en la BD
-async def handle_email_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
 
-    if not user_states.get(user_id) == 'waiting_for_email':
-        return
-
-    del user_states[user_id]
-    
     if not await checkUser(update):
-        return
-    
-    if not await verifyUserMaxReports(update, False):
         return
     
     user_message = update.message.text.strip()
 
+    if user_states.get(user_id) == 'waiting_for_email':
+        replaceAccount(update, context, user_message)
+
+    if user_states.get(user_id) == 'waiting_for_saldo':
+        giveNewAccounts(update, context, user_message)
+
+async def giveNewAccounts(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
+    iSaldo = await get_saldo(update)
+    try:
+        cantidad = int(user_message)
+        if cantidad > 0 and cantidad <= iSaldo:
+            await update.message.reply_text(f"Has solicitado {cantidad} cuentas. Procesando...")
+            # Lógica adicional para otorgar cuentas
+        else:
+            await update.message.reply_text(f"Por favor, introduce un número positivo menor o igual a tu saldo ({iSaldo}).")
+    except ValueError:
+        await update.message.reply_text("Debes introducir un número válido.")
+
+    return
+    
+async def replaceAccount(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
+    user_id = update.message.from_user.id
+    del user_states[user_id]
+    
+    if not await verifyUserMaxReports(update, False):
+        return
+    
     if not user_message or not is_valid_email(user_message):
         await update.message.reply_text("Por favor, introduce una dirección de correo válida.")
         return
 
-    aData = await get_google_sheet_data(1)
     # Verifica si el correo está en la lista y pertenece al usuario que lo ha reportado de autorizados
+    aData = await get_google_sheet_data(1)
     bValidUser = False
     bValidEmail = False
     bValidState = True
@@ -88,7 +107,6 @@ async def handle_email_message(update: Update, context: ContextTypes.DEFAULT_TYP
         if oData['Correo'].lower() == user_message.lower():
             bValidEmail = True
         
-
     if not bValidState:
         await update.message.reply_text(f'Esta cuenta ya ha sido reportada')
         return
@@ -232,11 +250,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             InlineKeyboardButton("🔴 Reemplazo Netflix 🔴", callback_data="solicitar_correo"),
         ],
         [
+            InlineKeyboardButton("🛍️ Gastar saldo 🛍️", callback_data="gastar_saldo")
+        ],
+        [
             InlineKeyboardButton("📥 Revisar saldo 📥", callback_data="ver_saldo")
         ],
         [
             #InlineKeyboardButton("💰 Precios 💰", callback_data="ver_precios"),
-            InlineKeyboardButton("📞 Contacto 📞", callback_data="ver_contacto")
+            InlineKeyboardButton("📞 Recargar saldo 📞", callback_data="ver_contacto")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -253,10 +274,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         user_states[query.from_user.id] = 'waiting_for_email'
 
     elif query.data == "ver_contacto":
-        await update.effective_message.reply_text(f'Para contratar contactar con @confeti')
+        await update.effective_message.reply_text(f'Para recargar contactar con @confeti')
 
     elif query.data == "ver_saldo":
         await ver_saldo(update)
+
+    elif query.data == "gastar_saldo":
+        await gastar_saldo(update)
 
 
 async def add_log(update: Update, sResult, sReplacement, sError) -> None:
@@ -284,11 +308,38 @@ async def ver_saldo(update: Update) -> None:
             else:
                 await update.effective_message.reply_text(f"Tu saldo es de: 0 cuentas")
             return
+        
+async def get_saldo(update: Update) -> int:
+    user_id = update.callback_query.from_user.id
+    aUsers = await get_google_sheet_data(0)
+    for oUser in aUsers:
+        if oUser['ID'] == user_id:
+            iSaldo = oUser['saldo']
+            if iSaldo is not None:
+                return iSaldo
+            else:
+                return 0
+    return 0
+        
+async def gastar_saldo(update: Update) -> None:
+    iSaldo = await get_saldo(update)
+    if not iSaldo:
+        await update.effective_message.reply_text(f"Tu saldo es de: 0 cuentas")
+        return
+    
+    await update.effective_message.reply_text(f"Tu saldo es de: {iSaldo} cuentas \n ¿Cuantas quieres?")
+    user_states[update.callback_query.from_user.id] = 'waiting_for_saldo'
+
+    
+
+    
+
+
     
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button_callback))
-app.add_handler(MessageHandler(BaseFilter(), handle_email_message))
+app.add_handler(MessageHandler(BaseFilter(), handle_message))
 
 app.run_polling()
