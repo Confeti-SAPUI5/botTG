@@ -278,8 +278,10 @@ async def ver_saldo(update: Update) -> None:
             iSaldo = oUser['saldo']
             if iSaldo is not None:
                 print(f"Tu saldo es de: {iSaldo} cuentas")
+                await update.message.reply_text(f"Tu saldo es de: {iSaldo} cuentas")
             else:
                 print("Tu saldo es de: 0 cuentas")
+                await update.message.reply_text(f"Tu saldo es de: 0 cuentas")
             return
     
 app = ApplicationBuilder().token(TOKEN).build()
