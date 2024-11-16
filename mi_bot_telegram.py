@@ -59,10 +59,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user_message = update.message.text.strip()
 
     if user_states.get(user_id) == 'waiting_for_email':
-        replaceAccount(update, context, user_message)
+        await replaceAccount(update, context, user_message)
 
     if user_states.get(user_id) == 'waiting_for_saldo':
-        giveNewAccounts(update, context, user_message)
+        await giveNewAccounts(update, context, user_message)
 
 async def giveNewAccounts(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
     iSaldo = await get_saldo(update)
