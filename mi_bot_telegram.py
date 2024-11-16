@@ -70,13 +70,41 @@ async def giveNewAccounts(update: Update, context: ContextTypes.DEFAULT_TYPE, us
         cantidad = int(user_message)
         if cantidad > 0 and cantidad <= iSaldo:
             await update.message.reply_text(f"Has solicitado {cantidad} cuentas. Procesando...")
+            await checkAvailableAccounts(update)
             # Lógica adicional para otorgar cuentas
         else:
             await update.message.reply_text(f"Por favor, introduce un número positivo menor o igual a tu saldo ({iSaldo}).")
     except ValueError:
         await update.message.reply_text("Debes introducir un número válido.")
-
     return
+
+async def checkAvailableAccounts(update, num_accounts):
+    aAccounts = await get_google_sheet_data(1)
+
+    # Filtrar las cuentas disponibles: Usuario (C) está vacío y Estado (D) no es "Error"
+    available_accounts = [
+        {"Correo": row["Correo"], "Contraseña": row["Contraseña"]}
+        for row in aAccounts
+        if not row["Usuario"] and row["Estado"] != "Error"
+    ]
+
+    # Verificar si hay suficientes cuentas disponibles
+    if len(available_accounts) < num_accounts:
+        await update.message.reply_text(
+            f"Solo hay {len(available_accounts)} cuentas disponibles, pero solicitaste {num_accounts}."
+        )
+        return None
+    
+    extracted_accounts = available_accounts[:num_accounts]
+
+    # Mostrar las cuentas al usuario
+    message = "Las cuentas disponibles son:\n\n"
+    for account in extracted_accounts:
+        message += f"📧 Correo: {account['Correo']}\n🔑 Contraseña: {account['Contraseña']}\n\n"
+
+    await update.message.reply_text(message)
+
+    
     
 async def replaceAccount(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
     user_id = update.message.from_user.id
