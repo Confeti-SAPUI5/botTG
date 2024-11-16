@@ -245,14 +245,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
 
+    # Confirmar el callback para que el botón no quede marcado
+    await query.answer()
+
     if query.data == "solicitar_correo":
         await update.effective_message.reply_text("Introduce la dirección de correo electrónico que da error:")
         user_states[query.from_user.id] = 'waiting_for_email'
 
-    if query.data == "ver_contacto":
+    elif query.data == "ver_contacto":
         await update.effective_message.reply_text(f'Para contratar contactar con @confeti')
 
-    if query.data == "ver_saldo":
+    elif query.data == "ver_saldo":
         await ver_saldo(update)
 
 
