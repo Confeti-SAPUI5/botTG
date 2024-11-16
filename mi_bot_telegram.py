@@ -70,7 +70,7 @@ async def giveNewAccounts(update: Update, context: ContextTypes.DEFAULT_TYPE, us
         cantidad = int(user_message)
         if cantidad > 0 and cantidad <= iSaldo:
             await update.message.reply_text(f"Has solicitado {cantidad} cuentas. Procesando...")
-            await checkAvailableAccounts(update, cantidad)
+            await checkAvailableAccounts(update, context, cantidad)
             # Lógica adicional para otorgar cuentas
         else:
             await update.message.reply_text(f"Por favor, introduce un número positivo menor o igual a tu saldo ({iSaldo}).")
@@ -78,7 +78,7 @@ async def giveNewAccounts(update: Update, context: ContextTypes.DEFAULT_TYPE, us
         await update.message.reply_text("Debes introducir un número válido.")
     return
 
-async def checkAvailableAccounts(update, num_accounts):
+async def checkAvailableAccounts(update, context, num_accounts):
     aAccounts = await get_google_sheet_data(1)
 
     # Filtrar las cuentas disponibles: Usuario (C) está vacío y Estado (D) no es "Error"
@@ -104,15 +104,15 @@ async def checkAvailableAccounts(update, num_accounts):
 
     await update.message.reply_text(message)
 
-    await updateAssignedAccounts(update, num_accounts, extracted_accounts)
+    await updateAssignedAccounts(update, context, num_accounts, extracted_accounts)
 
-async def updateAssignedAccounts(update, num_accounts, extracted_accounts):
+async def updateAssignedAccounts(update, context, num_accounts, extracted_accounts):
     user_id = update.message.from_user.id if update.message else update.callback_query.from_user.id
     aAccounts = await get_google_sheet_data(1)
     # Actualizar la columna C (Usuario) en la hoja 1 para las cuentas entregadas
     for account in extracted_accounts:
         account_email = account['Correo']
-        await add_log(update, f'Cuenta {account_email} entregada gastando saldo')
+        await add_log(update, context, f'Cuenta {account_email} entregada gastando saldo')
         for i, row in enumerate(aAccounts):
             if row['Correo'] == account_email:
                 await update_google_sheet(1, i + 2, 3, user_id)  # Actualiza la columna C con el user_id
@@ -162,7 +162,7 @@ async def replaceAccount(update: Update, context: ContextTypes.DEFAULT_TYPE, use
 
     if bValidUser and bValidEmail:
         #await update.message.reply_text(f'Generando reemplazo...')
-        await send_Netflix_replacement(update, iRow)
+        await send_Netflix_replacement(update, context, iRow)
 
     if not bValidEmail:
         await update.message.reply_text(f"El correo '{user_message}' no se encuetra en la base de datos")
@@ -253,7 +253,7 @@ async def borrar_reporte_mas_antiguo(aReports, user_id, registros_usuario):
     else:
         print("No se encontró el registro más antiguo para eliminar.")
 
-async def send_Netflix_replacement(update, iRow) -> bool:
+async def send_Netflix_replacement(update, context, iRow) -> bool:
     aCuentas = await get_google_sheet_data(1)
     resultado, fila = next(
         ((obj, idx + 2) for idx, obj in enumerate(aCuentas) if obj['Usuario'] == '' and obj['Estado'] != 'Error'),
@@ -264,7 +264,7 @@ async def send_Netflix_replacement(update, iRow) -> bool:
         user_message = update.message.text.strip()
 
         await update.message.reply_text(f"Reemplazo generado: \nCorreo: {resultado['Correo']}\nContraseña: {resultado['Contraseña']}")
-        await add_log(update, f"{user_message} reemplazada por \n {resultado['Correo']}")
+        await add_log(update, context, f"{user_message} reemplazada por \n {resultado['Correo']}")
 
         user_id = update.message.from_user.id
         #Rellenammos columna usuario de la cuenta que le hemos dado
@@ -293,7 +293,7 @@ async def send_Netflix_replacement(update, iRow) -> bool:
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await checkUser(update):
         await update.message.reply_text('No tienes permisos para usar este bot')
-        await add_log(update, 'Usuario no autorizado intentado usar  el bot')
+        await add_log(update, context, 'Usuario no autorizado intentado usar  el bot')
         return
     keyboard = [
         [
@@ -333,12 +333,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await gastar_saldo(update)
 
 
-async def add_log(update, sDetails) -> None:
+async def add_log(update, context, sDetails) -> None:
     fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     sMessage = f"Fecha: {fecha_actual}\n"
     sMessage = sMessage + f"Usuario: {update.message.from_user.id}\n"
     sMessage = sMessage + f"Detalles: {sDetails}"
+    await context.bot.send_message(chat_id=admin_chat_id, text=f"{sMessage}")
 
 
 async def ver_saldo(update: Update) -> None:
