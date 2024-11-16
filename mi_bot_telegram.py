@@ -252,6 +252,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if query.data == "ver_contacto":
         await update.effective_message.reply_text(f'Para contratar contactar con @confeti')
 
+    if query.data == "ver_saldo":
+        await ver_saldo(update)
+
+
 async def add_log(update: Update, sResult, sReplacement, sError) -> None:
     fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     user_id = update.message.from_user.id
