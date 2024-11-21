@@ -44,6 +44,24 @@ async def update_google_sheet(worksheet_index, row, column, value):
     sheet = googleClient.open(BD).get_worksheet(worksheet_index)
     sheet.update_cell(row, column, value)
 
+#Para actualizar un varios registros en una hoja
+async def update_google_sheet_batch(worksheet_index, start_row, start_col, data):
+    googleClient = get_google_client()
+    sheet = googleClient.open(BD).get_worksheet(worksheet_index)
+
+    # Convertimos el inicio a rango A1
+    start_cell = gspread.utils.rowcol_to_a1(start_row, start_col)
+
+    # Calculamos el rango de destino según el tamaño de los datos
+    end_cell = gspread.utils.rowcol_to_a1(start_row + len(data) - 1, start_col + len(data[0]) - 1)
+
+    # Rango completo a actualizar
+    range_ = f"{start_cell}:{end_cell}"
+
+    # Actualizamos el rango con los valores
+    sheet.update(range_, data)
+
+
 #Funcion para validar si el usuario a mandado un correo
 def is_valid_email(email):
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -61,9 +79,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if user_states.get(user_id) == 'waiting_for_email':
         await replaceAccount(update, context, user_message)
+        return
 
     if user_states.get(user_id) == 'waiting_for_saldo':
         await giveNewAccounts(update, context, user_message)
+        return
+    
+    await update.message.reply_text(f"Utiliza los botones o el comando /start para continuar")
 
 async def giveNewAccounts(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
     iSaldo = await get_saldo(update)
@@ -274,7 +296,9 @@ async def send_Netflix_replacement(update, context, iRow, user_message, user_id)
         aReportes = await get_google_sheet_data(2)
         fecha_hoy = datetime.now()
         fecha_formateada = fecha_hoy.strftime("%d/%m/%Y %H:%M:%S")
-        await update_google_sheet(2, len(aReportes) + 2, 1, f"{user_id}\t{fecha_formateada}\t{user_message}\t{resultado['Correo']}")
+        #await update_google_sheet(2, len(aReportes) + 2, 1, f"{user_id}\t{fecha_formateada}\t{user_message}\t{resultado['Correo']}")
+        data = [[user_id, fecha_formateada, user_message, resultado['Correo']]]
+        await update_google_sheet_batch(2, len(aReportes) + 2, 1, data)        
         return True
     else:
         await update.message.reply_text("No hay reemplazos disponibles, prueba mas tarde.")
