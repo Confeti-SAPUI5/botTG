@@ -427,14 +427,20 @@ async def gastar_saldo(update: Update) -> None:
     await update.effective_message.reply_text(f"Tu saldo es de: {iSaldo} cuentas \n ¿Cuantas quieres?")
     user_states[update.callback_query.from_user.id] = 'waiting_for_saldo'
 
-    
+async def setup_jobs(application):
+    # Hora en la que quieres ejecutar la tarea (9:00 AM, zona horaria UTC)
+    job_time = time(hour=23, minute=5, tzinfo=timezone.utc)
 
-    
+    # Añadir el job recurrente
+    application.job_queue.run_daily(
+        notify_users,  # Función a ejecutar
+        job_time,      # Hora de ejecución
+        name="DailyAccountCheck"  # Nombre del job
+    )
 
-
-    
+# Ejecutar el JobQueue al iniciar la app
 app = ApplicationBuilder().token(TOKEN).build()
-
+setup_jobs(app)
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button_callback))
 app.add_handler(MessageHandler(BaseFilter(), handle_message))
