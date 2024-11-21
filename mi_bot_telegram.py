@@ -53,6 +53,7 @@ def is_valid_email(email):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
 
+    #Verificamos que el usuario esté en BD
     if not await checkUser(update):
         return
     
@@ -126,53 +127,48 @@ async def updateAssignedAccounts(update, context, num_accounts, extracted_accoun
                 new_balance = current_balance - num_accounts
                 await update_google_sheet(0, aUsers.index(user) + 2, 3, new_balance)  # Actualiza la columna C con el nuevo saldo
                 break
+
+async def verifyAccountStatus(update: Update, context: ContextTypes.DEFAULT_TYPE, aAccounts, sAccount) -> bool:
+    for oAccount in aAccounts:
+        if oAccount['Correo'].lower() == sAccount.lower() and oAccount['Estado'] == 'Error':
+            await update.message.reply_text(f'Esta cuenta ya ha sido reportada')
+            return False
+    return True
+
+async def verifyAccountUser(update: Update, context: ContextTypes.DEFAULT_TYPE, aAccounts, sAccount, iUserID) -> bool:
+    iRow = 0
+    for iIndex, oAccount in enumerate(aAccounts):
+        if oAccount['Correo'].lower() == sAccount.lower() and oAccount['Usuario'] == iUserID:
+            iRow = iIndex + 2
+            break 
+    return iRow
     
 async def replaceAccount(update: Update, context: ContextTypes.DEFAULT_TYPE, user_message) -> None:
     user_id = update.message.from_user.id
     del user_states[user_id]
     
-    if not await verifyUserMaxReports(update, False):
-        return
-    
+    #Verificamos que haya escrito un correo válido
     if not user_message or not is_valid_email(user_message):
         await update.message.reply_text("Por favor, introduce una dirección de correo válida.")
         return
-
-    # Verifica si el correo está en la lista y pertenece al usuario que lo ha reportado de autorizados
-    aData = await get_google_sheet_data(1)
-    bValidUser = False
-    bValidEmail = False
-    bValidState = True
-    iRow = 0
-    for iIndex, oData in enumerate(aData):
-        if oData['Correo'].lower() == user_message.lower() and oData['Estado'] == 'Error':
-            bValidState = False
-            break
-        if oData['Correo'].lower() == user_message.lower() and oData['Usuario'] == user_id:
-            bValidUser = True
-            bValidEmail = True
-            iRow = iIndex + 2
-            break 
-        if oData['Correo'].lower() == user_message.lower():
-            bValidEmail = True
-        
-    if not bValidState:
-        await update.message.reply_text(f'Esta cuenta ya ha sido reportada')
+    
+    #Verificamos el número máximo de reportes
+    if not await verifyUserMaxReports(update, False):
         return
 
-    if bValidUser and bValidEmail:
-        #await update.message.reply_text(f'Generando reemplazo...')
-        await send_Netflix_replacement(update, context, iRow)
-
-    if not bValidEmail:
-        await update.message.reply_text(f"El correo '{user_message}' no se encuetra en la base de datos")
-        await context.bot.send_message(chat_id=admin_chat_id, text=f'El usuario {user_id} ha escrito: {user_message} y no se encuetra en la base de datos')
+    #Verificamos que la cuenta no esté en estado error (significaría que ya ha sido reporatada antes)
+    aAccounts = await get_google_sheet_data(1)
+    if not await verifyAccountStatus(update, context, aAccounts, user_message):
         return
-
-    if bValidEmail and not bValidUser:
+    
+    #Verificamos que la cuenta pertenece al usuario que la está reportando
+    iRow = verifyAccountUser(update, context, aAccounts, user_message, user_id)
+    if iRow == 0:
         await update.message.reply_text(f"El correo '{user_message}' no se encuentra asociado a tu usuario")
         await context.bot.send_message(chat_id=admin_chat_id, text=f'El usuario {user_id} ha escrito: {user_message} y no se encuentra asociado a tu usuario')
         return
+
+    await send_Netflix_replacement(update, context, iRow, user_message, user_id)
 
 async def checkUser(update: Update) -> bool:
     user_id = update.message.from_user.id
@@ -217,7 +213,6 @@ async def verifyUserMaxReports(update: Update, bDelete) -> bool:
             await update.message.reply_text(f"Tiempo restante: {int(horas)} horas, {int(minutos)} minutos, {int(segundos)} segundos")
             return False
     if len(resultados_filtrados) < iMaxReports:
-            print(f"entra 2")
             return True
 
 from datetime import datetime
@@ -253,7 +248,7 @@ async def borrar_reporte_mas_antiguo(aReports, user_id, registros_usuario):
     else:
         print("No se encontró el registro más antiguo para eliminar.")
 
-async def send_Netflix_replacement(update, context, iRow) -> bool:
+async def send_Netflix_replacement(update, context, iRow, user_message, user_id) -> bool:
     aCuentas = await get_google_sheet_data(1)
     resultado, fila = next(
         ((obj, idx + 2) for idx, obj in enumerate(aCuentas) if obj['Usuario'] == '' and obj['Estado'] != 'Error'),
@@ -261,12 +256,10 @@ async def send_Netflix_replacement(update, context, iRow) -> bool:
     )
 
     if resultado:
-        user_message = update.message.text.strip()
-
+        #Enviamos el reemplazo
         await update.message.reply_text(f"Reemplazo generado: \nCorreo: {resultado['Correo']}\nContraseña: {resultado['Contraseña']}")
         await add_log(update, context, f"{user_message} reemplazada por \n {resultado['Correo']}")
 
-        user_id = update.message.from_user.id
         #Rellenammos columna usuario de la cuenta que le hemos dado
         await update_google_sheet(1, fila, 3, user_id)
 
@@ -274,17 +267,14 @@ async def send_Netflix_replacement(update, context, iRow) -> bool:
         await update_google_sheet(1, iRow, 4, 'Error')
         await update_google_sheet(1, iRow, 5, user_id)
         
-        #await update.message.reply_text(f'Eliminando reporte mas antiguo...')
+        #Eliminamos el registro del reporte mas antiguo si han pasado mas de 24h
         await verifyUserMaxReports(update, True)
 
-        #await update.message.reply_text(f'Añadiendo registro del reporte...')
+        #Añadimos el log del reemplazo de cuenta
         aReportes = await get_google_sheet_data(2)
-        await update_google_sheet(2, len(aReportes) + 2, 1, user_id)
         fecha_hoy = datetime.now()
         fecha_formateada = fecha_hoy.strftime("%d/%m/%Y %H:%M:%S")
-        await update_google_sheet(2, len(aReportes) + 2, 2, fecha_formateada)
-        await update_google_sheet(2, len(aReportes) + 2, 3, user_message)
-        await update_google_sheet(2, len(aReportes) + 2, 4, resultado['Correo'])
+        await update_google_sheet(2, len(aReportes) + 2, 1, f"{user_id}\t{fecha_formateada}\t{user_message}\t{resultado['Correo']}")
         return True
     else:
         await update.message.reply_text("No hay reemplazos disponibles, prueba mas tarde.")
