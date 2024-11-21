@@ -429,7 +429,7 @@ async def gastar_saldo(update: Update) -> None:
 
 async def setup_jobs(application):
     # Hora en la que quieres ejecutar la tarea (9:00 AM, zona horaria UTC)
-    job_time = time(hour=23, minute=5, tzinfo=timezone.utc)
+    job_time = time(hour=23, minute=15, tzinfo=timezone('Europe/Madrid'))
 
     # Añadir el job recurrente
     application.job_queue.run_daily(
