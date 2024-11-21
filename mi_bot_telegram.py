@@ -162,7 +162,7 @@ async def replaceAccount(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         return
     
     #Verificamos que la cuenta pertenece al usuario que la está reportando
-    iRow = verifyAccountUser(update, context, aAccounts, user_message, user_id)
+    iRow = await verifyAccountUser(update, context, aAccounts, user_message, user_id)
     if iRow == 0:
         await update.message.reply_text(f"El correo '{user_message}' no se encuentra asociado a tu usuario")
         await context.bot.send_message(chat_id=admin_chat_id, text=f'El usuario {user_id} ha escrito: {user_message} y no se encuentra asociado a tu usuario')
