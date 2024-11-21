@@ -214,6 +214,7 @@ async def verifyUserMaxReports(update: Update, bDelete) -> bool:
     aReports = await get_google_sheet_data(2)
     resultados_filtrados = [reporte for reporte in aReports if reporte['ID Usuario'] == user_id]
     if not len(resultados_filtrados):
+        await update.message.reply_text("Has llegado al límite de reportes en 24h")
         return False
     
     if len(resultados_filtrados) >= iMaxReports:
