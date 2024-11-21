@@ -202,6 +202,31 @@ async def checkUser(update: Update) -> bool:
             break
     return bFound
 
+from datetime import datetime
+
+async def notify_users(context):
+    googleClient = get_google_client()
+    sheet = googleClient.open(BD).get_worksheet(1)
+    accounts = sheet.get_all_records()
+
+    today = datetime.now().strftime("%d/%m/%Y")
+    for account in accounts:
+        # Si hay fecha de renovación, comparar
+        if account["Fecha renovación"]:
+            renewal_date = datetime.strptime(account["Fecha renovación"], "%d/%m/%Y")
+            if renewal_date <= datetime.now():
+                # Enviar mensaje al usuario asociado
+                telegram_user = account["Usuario"]
+                if telegram_user:
+                    try:
+                        await context.bot.send_message(
+                            chat_id=telegram_user,
+                            text=f"Hola, la cuenta `{account['Correo']}` necesita renovación. Por favor, actúa en consecuencia. 📅 Fecha de renovación: {renewal_date.strftime('%d/%m/%Y')}"
+                        )
+                    except Exception as e:
+                        print(f"Error al enviar mensaje a {telegram_user}: {e}")
+
+
 async def verifyUserMaxReports(update: Update, bDelete) -> bool:
     user_id = update.message.from_user.id
     aUsers = await get_google_sheet_data(0)
@@ -326,6 +351,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [
             #InlineKeyboardButton("💰 Precios 💰", callback_data="ver_precios"),
             InlineKeyboardButton("📞 Recargar saldo 📞", callback_data="ver_contacto")
+        ],
+        [
+            InlineKeyboardButton(" TEST ", callback_data="notify_users")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -349,6 +377,9 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     elif query.data == "gastar_saldo":
         await gastar_saldo(update)
+
+    elif query.data == "notify_users":
+            await notify_users(context)
 
 
 async def add_log(update, context, sDetails) -> None:
