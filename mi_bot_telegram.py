@@ -213,6 +213,9 @@ async def verifyUserMaxReports(update: Update, bDelete) -> bool:
     
     aReports = await get_google_sheet_data(2)
     resultados_filtrados = [reporte for reporte in aReports if reporte['ID Usuario'] == user_id]
+    if not len(resultados_filtrados):
+        return False
+    
     if len(resultados_filtrados) >= iMaxReports:
         #Verificar si han pasado mas de 24h desde el último reporte, si es así borrarlo. Si no es asi dar aviso al usuario
         fechas = [
