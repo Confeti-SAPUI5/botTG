@@ -220,7 +220,7 @@ async def notify_users(context):
         # Si hay fecha de renovación, comparar
         if account["Fecha renovación"]:
             renewal_date = datetime.strptime(account["Fecha renovación"], "%d/%m/%Y")
-            print(f"renueval date {account["Fecha renovación"]} {today}")
+            print(f"renueval date {today}")
             if renewal_date <= today:
                 # Enviar mensaje al usuario asociado
                 telegram_user = account["Usuario"]
@@ -436,7 +436,7 @@ async def gastar_saldo(update: Update) -> None:
 
 async def setup_jobs(application):
     # Hora en la que quieres ejecutar la tarea (9:00 AM, zona horaria UTC)
-    job_time = time(hour=10, minute=17, tzinfo=timezone('Europe/Madrid'))
+    job_time = time(hour=10, minute=20, tzinfo=timezone('Europe/Madrid'))
 
     # Añadir el job recurrente
     application.job_queue.run_daily(
