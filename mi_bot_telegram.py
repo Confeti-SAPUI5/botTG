@@ -112,17 +112,27 @@ async def checkAvailableAccounts(update, context, num_accounts):
         if not row["Usuario"] and row["Estado"] != "Error"
     ]
 
+    booked_accounts = [
+        {"Correo": row["Correo"], "Contraseña": row["Contraseña"]}
+        for row in aAccounts
+        if not row["Usuario"] and row["Estado"] == "Reservada"
+    ]
+
+    iAvaibleAccs = len(available_accounts) + len(booked_accounts)
     # Verificar si hay suficientes cuentas disponibles
-    if len(available_accounts) < num_accounts:
+    if iAvaibleAccs < num_accounts:
         await update.message.reply_text(
-            f"Solo hay {len(available_accounts)} cuentas disponibles, pero solicitaste {num_accounts}."
+            f"Solo hay {iAvaibleAccs} cuentas disponibles, pero solicitaste {num_accounts}."
         )
         return None
     
-    extracted_accounts = available_accounts[:num_accounts]
+    extracted_accounts = booked_accounts[:num_accounts]
+    if len(extracted_accounts) < num_accounts:
+        remaining_accounts_needed = num_accounts - len(extracted_accounts)
+        extracted_accounts += available_accounts[:remaining_accounts_needed]
 
     # Mostrar las cuentas al usuario
-    message = "Las cuentas disponibles son:\n\n"
+    message = "Cuentas entragadas:\n\n"
     for account in extracted_accounts:
         message += f"📧 Correo: {account['Correo']}\n🔑 Contraseña: {account['Contraseña']}\n\n"
 
@@ -470,6 +480,8 @@ async def gastar_saldo(update: Update) -> None:
     
     await update.effective_message.reply_text(f"Tu saldo es de: {iSaldo} cuentas \n ¿Cuantas quieres?")
     user_states[update.callback_query.from_user.id] = 'waiting_for_saldo'
+
+
 
 # Ejecutar el JobQueue al iniciar la app
 app = ApplicationBuilder().token(TOKEN).build()
