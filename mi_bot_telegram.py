@@ -363,6 +363,7 @@ async def admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
             chat_id=update.callback_query.message.chat_id,
+            text="",
             reply_markup=reply_markup
         )
     
