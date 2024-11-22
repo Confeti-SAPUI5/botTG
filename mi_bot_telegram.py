@@ -210,19 +210,25 @@ async def notify_users(context):
     sheet = googleClient.open(BD).get_worksheet(1)
     accounts = sheet.get_all_records()
 
+    print("Entra en la función")
+
     today = datetime.now().strftime("%d/%m/%Y")
+    print(f"Fecha actual {today}")
+
+
     for account in accounts:
         # Si hay fecha de renovación, comparar
         if account["Fecha renovación"]:
             renewal_date = datetime.strptime(account["Fecha renovación"], "%d/%m/%Y")
-            if renewal_date <= datetime.now():
+            print(f"renueval date {account["Fecha renovación"]} {today}")
+            if renewal_date <= today:
                 # Enviar mensaje al usuario asociado
                 telegram_user = account["Usuario"]
                 if telegram_user:
                     try:
                         await context.bot.send_message(
                             chat_id=telegram_user,
-                            text=f"Hola, la cuenta `{account['Correo']}` necesita renovación. Por favor, actúa en consecuencia. 📅 Fecha de renovación: {renewal_date.strftime('%d/%m/%Y')}"
+                            text=f"Hola, la cuenta {account['Correo']} necesita renovación. Por favor, actúa en consecuencia. 📅 Fecha de renovación: {renewal_date.strftime('%d/%m/%Y')}"
                         )
                     except Exception as e:
                         print(f"Error al enviar mensaje a {telegram_user}: {e}")
@@ -430,7 +436,7 @@ async def gastar_saldo(update: Update) -> None:
 
 async def setup_jobs(application):
     # Hora en la que quieres ejecutar la tarea (9:00 AM, zona horaria UTC)
-    job_time = time(hour=10, minute=10, tzinfo=timezone('Europe/Madrid'))
+    job_time = time(hour=10, minute=17, tzinfo=timezone('Europe/Madrid'))
 
     # Añadir el job recurrente
     application.job_queue.run_daily(
