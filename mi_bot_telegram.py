@@ -384,7 +384,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         ],
         [
             #InlineKeyboardButton("💰 Precios 💰", callback_data="ver_precios"),
-            InlineKeyboardButton("📞 Recargar saldo 📞", callback_data="ver_contacto")
+            InlineKeyboardButton("📞 Recargar saldo 📞", callback_data="recargar_saldo")
         ],
         [
             InlineKeyboardButton("🛠️ Admin 🛠️", callback_data="admin_buttons")
@@ -403,7 +403,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.effective_message.reply_text("Introduce la dirección de correo electrónico que da error:")
         user_states[query.from_user.id] = 'waiting_for_email'
 
-    elif query.data == "ver_contacto":
+    elif query.data == "admin_buttons":
+        await admin_buttons(update, context)
+
+    elif query.data == "recargar_saldo":
         await update.effective_message.reply_text(f'Para recargar contactar con @confeti')
 
     elif query.data == "ver_saldo":
@@ -412,8 +415,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif query.data == "gastar_saldo":
         await gastar_saldo(update)
 
-    elif query.data == "admin_buttons":
-        await admin_buttons(update, context)
+    elif query.data == "notify_users":
+        await notify_users(update, context)
+
+
 
             
 
