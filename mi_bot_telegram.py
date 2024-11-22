@@ -396,6 +396,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
 
+    print(f"Entra en pulsar botones")
+    print(query.data)
+
     # Confirmar el callback para que el botón no quede marcado
     await query.answer()
 
