@@ -229,12 +229,12 @@ async def notify_users(update, context):
                 if telegram_user:
                     if telegram_user not in user_accounts:
                         user_accounts[telegram_user] = []
-                    user_accounts[telegram_user].append(account["Correo"])
+                    user_accounts[telegram_user].append(f"{account['Correo']} ({renewal_date.strftime('%d/%m/%Y')})")
 
     # Enviar un mensaje por usuario con todas sus cuentas a renovar
     for telegram_user, emails in user_accounts.items():
         try:
-            message = "Hola buenas 👋🙂\n\nLas siguientes cuentas necesitan renovación:\n"
+            message = "Hola buenas 👋🏻😁\n\nEstas cuentas necesitan renovación:\n"
             message += "\n".join(emails)
             await context.bot.send_message(chat_id=telegram_user, text=message)
         except Exception as e:
