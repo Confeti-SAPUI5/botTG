@@ -225,7 +225,7 @@ async def notify_users(update, context):
         if account["Fecha renovación"]:
             renewal_date = datetime.strptime(account["Fecha renovación"], "%d/%m/%Y")
             if renewal_date.strftime("%d/%m/%Y") <= today:
-                telegram_user = account["Usuario Telegram"]
+                telegram_user = account["Usuario"]
                 if telegram_user:
                     if telegram_user not in user_accounts:
                         user_accounts[telegram_user] = []
