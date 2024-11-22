@@ -206,38 +206,42 @@ async def checkUser(update: Update) -> bool:
 from datetime import datetime
 
 async def notify_users(update, context):
-    #Si lo hacemos manualmente hay que comprobar que el usuario que lo está haciendo es el admin (YO)
+    # Comprobar si el usuario que ejecuta la función es el admin
     user_id = update.message.from_user.id
     if user_id != admin_chat_id:
         await update.message.reply_text('No tienes permisos para usar este botón')
         return
-    
+
     googleClient = get_google_client()
     sheet = googleClient.open(BD).get_worksheet(1)
     accounts = sheet.get_all_records()
-
-    print("Entra en la función")
-
     today = datetime.now().strftime("%d/%m/%Y")
-    print(f"Fecha actual {today}")
+
+    # Crear un diccionario para agrupar correos por usuario de Telegram
+    user_accounts = {}
 
     for account in accounts:
-        # Si hay fecha de renovación, comparar
+        # Comprobar la fecha de renovación
         if account["Fecha renovación"]:
             renewal_date = datetime.strptime(account["Fecha renovación"], "%d/%m/%Y")
-            print(f"renueval date {today}")
-            if renewal_date <= today:
-                # Enviar mensaje al usuario asociado
-                telegram_user = account["Usuario"]
+            if renewal_date.strftime("%d/%m/%Y") <= today:
+                telegram_user = account["Usuario Telegram"]
                 if telegram_user:
-                    try:
-                        await context.bot.send_message(
-                            chat_id=telegram_user,
-                            text=f"Hola, la cuenta {account['Correo']} necesita renovación. Por favor, actúa en consecuencia. 📅 Fecha de renovación: {renewal_date.strftime('%d/%m/%Y')}"
-                        )
-                    except Exception as e:
-                        print(f"Error al enviar mensaje a {telegram_user}: {e}")
+                    if telegram_user not in user_accounts:
+                        user_accounts[telegram_user] = []
+                    user_accounts[telegram_user].append(account["Correo"])
 
+    # Enviar un mensaje por usuario con todas sus cuentas a renovar
+    for telegram_user, emails in user_accounts.items():
+        try:
+            message = "Hola buenas 👋🙂\n\nLas siguientes cuentas necesitan renovación:\n"
+            message += "\n".join(emails)
+            await context.bot.send_message(chat_id=telegram_user, text=message)
+        except Exception as e:
+            print(f"Error al enviar mensaje a {telegram_user}: {e}")
+
+    # Confirmar al admin que la tarea se realizó
+    await update.message.reply_text("Se han enviado los mensajes a los usuarios correspondientes. ✅")
 
 async def verifyUserMaxReports(update: Update, bDelete) -> bool:
     user_id = update.message.from_user.id
