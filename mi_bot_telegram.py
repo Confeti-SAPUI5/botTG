@@ -361,8 +361,11 @@ async def admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.callback_query.reply_markup(reply_markup=reply_markup)
-
+    await context.bot.send_message(
+            chat_id=update.callback_query.message.chat_id,
+            reply_markup=reply_markup
+        )
+    
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await checkUser(update):
         await update.message.reply_text('No tienes permisos para usar este bot')
