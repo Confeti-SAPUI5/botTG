@@ -4,6 +4,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from telegram.ext.filters import BaseFilter
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime, timedelta
+from pytz import timezone
 
 import json
 import os
@@ -429,7 +430,7 @@ async def gastar_saldo(update: Update) -> None:
 
 async def setup_jobs(application):
     # Hora en la que quieres ejecutar la tarea (9:00 AM, zona horaria UTC)
-    job_time = time(hour=23, minute=15, tzinfo=timezone('Europe/Madrid'))
+    job_time = time(hour=10, minute=10, tzinfo=timezone('Europe/Madrid'))
 
     # Añadir el job recurrente
     application.job_queue.run_daily(
