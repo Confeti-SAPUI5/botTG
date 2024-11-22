@@ -205,7 +205,13 @@ async def checkUser(update: Update) -> bool:
 
 from datetime import datetime
 
-async def notify_users(context):
+async def notify_users(update, context):
+    #Si lo hacemos manualmente hay que comprobar que el usuario que lo está haciendo es el admin (YO)
+    user_id = update.message.from_user.id
+    if user_id != admin_chat_id:
+        await update.message.reply_text('No tienes permisos para usar este botón')
+        return
+    
     googleClient = get_google_client()
     sheet = googleClient.open(BD).get_worksheet(1)
     accounts = sheet.get_all_records()
@@ -214,7 +220,6 @@ async def notify_users(context):
 
     today = datetime.now().strftime("%d/%m/%Y")
     print(f"Fecha actual {today}")
-
 
     for account in accounts:
         # Si hay fecha de renovación, comparar
@@ -339,6 +344,20 @@ async def send_Netflix_replacement(update, context, iRow, user_message, user_id)
     else:
         await update.message.reply_text("No hay reemplazos disponibles, prueba mas tarde.")
         return False
+    
+async def admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    if user_id != admin_chat_id:
+        await update.message.reply_text('No tienes permisos para usar este botón')
+        return
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("🔴 Avisar renovaciones 🔴", callback_data="notify_users"),
+        ],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_markup(reply_markup=reply_markup)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await checkUser(update):
@@ -360,7 +379,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             InlineKeyboardButton("📞 Recargar saldo 📞", callback_data="ver_contacto")
         ],
         [
-            InlineKeyboardButton(" TEST ", callback_data="notify_users")
+            InlineKeyboardButton("🛠️ Admin 🛠️", callback_data="admin_buttons")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -386,7 +405,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await gastar_saldo(update)
 
     elif query.data == "notify_users":
-            await notify_users(context)
+            await notify_users(update, context)
 
 
 async def add_log(update, context, sDetails) -> None:
@@ -434,20 +453,8 @@ async def gastar_saldo(update: Update) -> None:
     await update.effective_message.reply_text(f"Tu saldo es de: {iSaldo} cuentas \n ¿Cuantas quieres?")
     user_states[update.callback_query.from_user.id] = 'waiting_for_saldo'
 
-async def setup_jobs(application):
-    # Hora en la que quieres ejecutar la tarea (9:00 AM, zona horaria UTC)
-    job_time = time(hour=10, minute=20, tzinfo=timezone('Europe/Madrid'))
-
-    # Añadir el job recurrente
-    application.job_queue.run_daily(
-        notify_users,  # Función a ejecutar
-        job_time,      # Hora de ejecución
-        name="DailyAccountCheck"  # Nombre del job
-    )
-
 # Ejecutar el JobQueue al iniciar la app
 app = ApplicationBuilder().token(TOKEN).build()
-setup_jobs(app)
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button_callback))
 app.add_handler(MessageHandler(BaseFilter(), handle_message))
