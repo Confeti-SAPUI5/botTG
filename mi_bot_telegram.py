@@ -350,7 +350,7 @@ async def send_Netflix_replacement(update, context, iRow, user_message, user_id)
         return False
     
 async def admin_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.message.from_user.id
+    user_id = update.callback_query.from_user.id
     if user_id != admin_chat_id:
         await update.message.reply_text('No tienes permisos para usar este botón')
         return
@@ -409,7 +409,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await gastar_saldo(update)
 
     elif query.data == "admin_buttons":
-            await admin_buttons(update, context)
+        await admin_buttons(update, context)
 
             
 
