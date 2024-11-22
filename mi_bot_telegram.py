@@ -207,7 +207,7 @@ from datetime import datetime
 
 async def notify_users(update, context):
     # Comprobar si el usuario que ejecuta la función es el admin
-    user_id = update.message.from_user.id
+    user_id = update.callback_query.from_user.id
     if user_id != admin_chat_id:
         await update.message.reply_text('No tienes permisos para usar este botón')
         return
