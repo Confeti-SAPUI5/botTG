@@ -408,8 +408,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif query.data == "gastar_saldo":
         await gastar_saldo(update)
 
-    elif query.data == "notify_users":
-            await notify_users(update, context)
+    elif query.data == "admin_buttons":
+            await admin_buttons(update, context)
+
+            
 
 
 async def add_log(update, context, sDetails) -> None:
